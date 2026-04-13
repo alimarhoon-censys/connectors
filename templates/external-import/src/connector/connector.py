@@ -38,6 +38,8 @@ class TemplateConnector:
         - `self.helper.stix2_create_bundle(stix_objects)` is used when creating a bundle
         - `self.helper.send_stix2_bundle(stix_objects_bundle)` is used to send the bundle to OpenCTI
         - `self.helper.set_state()` is used to store persistent data in connector's state
+        - `self.helper.api.work.to_processed(...)` MUST be called to notify the platform when all bundles were sent
+        or when an error occured. Consider calling it in a `finally` block to make sure it gets called.
 
     """
 
@@ -104,6 +106,9 @@ class TemplateConnector:
             {"connector_name": self.helper.connect_name},
         )
 
+        work_id = None
+        message = "Done"
+        is_error = False
         try:
             # Get the current state
             now = datetime.now()
@@ -177,18 +182,22 @@ class TemplateConnector:
                 f"{self.helper.connect_name} connector successfully run, storing last_run as "
                 + str(last_run_datetime)
             )
-
-            self.helper.api.work.to_processed(work_id, message)
             self.helper.connector_logger.info(message)
-
         except (KeyboardInterrupt, SystemExit):
+            is_error = True
+            message = "Connector stopped..."
             self.helper.connector_logger.info(
-                "[CONNECTOR] Connector stopped...",
+                message,
                 {"connector_name": self.helper.connect_name},
             )
             sys.exit(0)
         except Exception as err:
-            self.helper.connector_logger.error(str(err))
+            is_error = True
+            message = str(err)
+            self.helper.connector_logger.error(message)
+        finally:
+            if work_id is not None:
+                self.helper.api.work.to_processed(work_id, message, is_error=is_error)
 
     def run(self) -> None:
         """
