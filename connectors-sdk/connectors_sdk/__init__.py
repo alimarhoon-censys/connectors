@@ -2,6 +2,7 @@
 
 __version__ = "0.1.0"
 
+from connectors_sdk.logging.logger import ConnectorLogger, logger
 from connectors_sdk.settings.annotated_types import (
     DatetimeFromIsoString,
     ListFromString,
@@ -26,6 +27,9 @@ from connectors_sdk.settings.exceptions import (
 from connectors_sdk.state_manager.state_manager import ConnectorStateManager
 
 __all__ = [
+    # Logger
+    "ConnectorLogger",  # mostly for typing purposes
+    "logger",
     # Base Settings
     "BaseConnectorSettings",
     # Base Configs
